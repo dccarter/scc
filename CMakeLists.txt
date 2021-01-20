@@ -66,7 +66,7 @@ if (CMAKE_CURRENT_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
                 demo/code.scc
                 demo/symbols.scc)
         SuilScc(demo
-            BINARY   ${CMAKE_BINARY_DIR}/scc
+            BINARY   ${CMAKE_CURRENT_BINARY_DIR}/scc
             DEPENDS  scc-bin demo-lib
             SOURCES  ${DEMO_SCC_SOURCES}
             LIB_PATH ${CMAKE_BINARY_DIR})
