@@ -53,8 +53,6 @@ function(SuilScc name)
             get_filename_component(__temp ${__${name}_SOURCE} ABSOLUTE)
             list(APPEND ${name}_SCC_SOURCES ${__temp})
         endforeach()
-        message(STATUS "${name} scc sources: ${${name}_SCC_SOURCES}")
-        message(STATUS "${name} scc outputs: ${${name}_OUTPUTS}")
 
         if (SUIL_SCC_LIB_PATH)
             set(__prefix ${CMAKE_COMMAND} -E env "LD_LIBRARY_PATH=${SUIL_SCC_LIB_PATH}")
