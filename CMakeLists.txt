@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # Configure build options
-option(SCC_BUILD_DEMO "Enbable/Disable building the demo library and app" ON)
+option(SCC_BUILD_DEMO "Enbable/Disable building the demo library and app" OFF)
 
 find_package(Threads REQUIRED)
 
@@ -44,8 +44,7 @@ if (CMAKE_CURRENT_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
         FetchContent_Declare(
                 iod
                 GIT_REPOSITORY https://gitlab.com/sw-devel/thirdparty/iod.git)
-        FetchContent_Populate(iod)
-        add_subdirectory(${iod_SOURCE_DIR} ${iod_BINARY_DIR})
+        FetchContent_MakeAvailable(iod)
 
         add_library(demo-lib SHARED
             demo/demo.cpp)
