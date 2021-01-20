@@ -130,7 +130,7 @@ function(SuilSccGenerator name)
 
     if (SUIL_SCC_GEN_DEPENDS)
         # Add targets that must be executed before this target
-        add_dependencies(${name} SUIL_SCC_GEN_DEPENDS)
+        add_dependencies(${name} ${SUIL_SCC_GEN_DEPENDS})
     endif()
 
     if (SUIL_SCC_GEN_OUTPUT_NAME)
