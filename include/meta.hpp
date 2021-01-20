@@ -1,0 +1,17 @@
+//
+// Created by Mpho Mbotho on 2020-10-24.
+//
+
+#ifndef SCC_META_HPP
+#define SCC_META_HPP
+
+#include "generator.hpp"
+
+namespace scc {
+
+    class MetaHeader final : public virtual HppGenerator {
+    public:
+        void generate(Formatter fmt, const Type& st) override;
+    };
+}
+#endif //SCC_META_HPP
