@@ -69,7 +69,7 @@ if (CMAKE_CURRENT_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
             BINARY   ${CMAKE_CURRENT_BINARY_DIR}/scc
             DEPENDS  scc-bin demo-lib
             SOURCES  ${DEMO_SCC_SOURCES}
-            LIB_PATH ${CMAKE_BINARY_DIR})
+            LIB_PATH ${CMAKE_CURRENT_BINARY_DIR})
     endif()
 endif()
 
