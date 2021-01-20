@@ -2,7 +2,7 @@
 // Created by Mpho Mbotho on 2020-10-28.
 //
 
-#include "formatter.hpp"
+#include <scc/formatter.hpp>
 
 #include <iostream>
 

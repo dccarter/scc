@@ -2,9 +2,9 @@
 // Created by Mpho Mbotho on 2020-10-24.
 //
 
-#include "generator.hpp"
-#include "program_generator.hpp"
-#include "program.hpp"
+#include <scc/generator.hpp>
+#include <scc/program_generator.hpp>
+#include <scc/program.hpp>
 
 #include <sstream>
 #include <iostream>

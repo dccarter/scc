@@ -2,9 +2,9 @@
 // Created by Mpho Mbotho on 2020-10-24.
 //
 
-#include "meta.hpp"
-#include "program.hpp"
-#include "visitor.hpp"
+#include <scc/meta.hpp>
+#include <scc/program.hpp>
+#include <scc/visitor.hpp>
 
 
 namespace scc {

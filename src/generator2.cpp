@@ -2,8 +2,8 @@
 // Created by Mpho Mbotho on 2020-10-25.
 //
 
-#include "program_generator.hpp"
-#include "exception.hpp"
+#include <scc/program_generator.hpp>
+#include <scc/exception.hpp>
 
 #include <dlfcn.h>
 #include <cstring>

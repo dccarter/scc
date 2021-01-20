@@ -2,13 +2,13 @@
 // Created by Mpho Mbotho on 2020-10-26.
 //
 
-#include "exception.hpp"
-#include "generator.hpp"
-#include "parser.hpp"
-#include "formatter.hpp"
-#include "program_generator.hpp"
+#include <scc/exception.hpp>
+#include <scc/generator.hpp>
+#include <scc/parser.hpp>
+#include <scc/formatter.hpp>
+#include <scc/program_generator.hpp>
 
-#include "clipp.hpp"
+#include <scc/clipp.hpp>
 #include <iostream>
 
 using scc::Exception;

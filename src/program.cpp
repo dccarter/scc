@@ -2,11 +2,11 @@
 // Created by Mpho Mbotho on 2020-10-27.
 //
 
-#include "generator.hpp"
-#include "program.hpp"
-#include "formatter.hpp"
-#include "astwrapper.hpp"
-#include "exception.hpp"
+#include <scc/generator.hpp>
+#include <scc/program.hpp>
+#include <scc/formatter.hpp>
+#include <scc/astwrapper.hpp>
+#include <scc/exception.hpp>
 
 using namespace peg::udl;
 

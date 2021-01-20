@@ -3,9 +3,9 @@
 //
 
 #include "demo.hpp"
-#include "program.hpp"
-#include "exception.hpp"
-#include "visitor.hpp"
+#include <scc/program.hpp>
+#include <scc/exception.hpp>
+#include <scc/visitor.hpp>
 
 namespace scc {
 

@@ -5,7 +5,7 @@
 #ifndef SCC_PARSER_HPP
 #define SCC_PARSER_HPP
 
-#include "program.hpp"
+#include <scc/program.hpp>
 
 #include <filesystem>
 #include <memory>

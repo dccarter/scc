@@ -5,8 +5,8 @@
 #ifndef SCC_DEMO_HPP
 #define SCC_DEMO_HPP
 
-#include "generator.hpp"
-#include "program.hpp"
+#include <scc/generator.hpp>
+#include <scc/program.hpp>
 
 namespace scc {
 

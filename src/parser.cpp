@@ -2,10 +2,10 @@
 // Created by Mpho Mbotho on 2020-10-29.
 //
 
-#include "parser.hpp"
-#include "generator.hpp"
-#include "astwrapper.hpp"
-#include "exception.hpp"
+#include <scc/parser.hpp>
+#include <scc/generator.hpp>
+#include <scc/astwrapper.hpp>
+#include <scc/exception.hpp>
 
 #include <fstream>
 

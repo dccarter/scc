@@ -2,12 +2,12 @@
 // Created by Mpho Mbotho on 2020-10-26.
 //
 
-#include "program_generator.hpp"
-#include "program.hpp"
-#include "meta.hpp"
-#include "exception.hpp"
-#include "visitor.hpp"
-#include "includes.hpp"
+#include <scc/program_generator.hpp>
+#include <scc/program.hpp>
+#include <scc/meta.hpp>
+#include <scc/exception.hpp>
+#include <scc/visitor.hpp>
+#include <scc/includes.hpp>
 
 #include <filesystem>
 #include <fstream>

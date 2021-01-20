@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # Configure build options
-option(SCC_BUILD_DEMO "Enbable/Disable building the demo library and app" OFF)
+option(SCC_BUILD_DEMO "Enbable/Disable building the demo library and app" ON)
 
 find_package(Threads REQUIRED)
 

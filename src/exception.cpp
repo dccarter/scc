@@ -2,9 +2,9 @@
 // Created by Mpho Mbotho on 2020-10-31.
 //
 
-#include "exception.hpp"
-#include "astwrapper.hpp"
-#include "program.hpp"
+#include <scc/exception.hpp>
+#include <scc/astwrapper.hpp>
+#include <scc/program.hpp>
 
 namespace scc {
 

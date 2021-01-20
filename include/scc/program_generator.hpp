@@ -5,7 +5,7 @@
 #ifndef SCC_PROGRAM_GENERATOR_HPP
 #define SCC_PROGRAM_GENERATOR_HPP
 
-#include "generator.hpp"
+#include <scc/generator.hpp>
 #include <unordered_map>
 #include <string>
 #include <filesystem>

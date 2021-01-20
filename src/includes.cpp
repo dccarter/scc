@@ -2,9 +2,9 @@
 // Created by Mpho Mbotho on 2020-11-04.
 //
 
-#include "includes.hpp"
-#include "program.hpp"
-#include "generator.hpp"
+#include <scc/includes.hpp>
+#include <scc/program.hpp>
+#include <scc/generator.hpp>
 
 namespace scc {
 

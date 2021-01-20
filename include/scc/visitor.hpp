@@ -5,7 +5,7 @@
 #ifndef SCC_VISITOR_HPP
 #define SCC_VISITOR_HPP
 
-#include "program.hpp"
+#include <scc/program.hpp>
 
 #include <functional>
 

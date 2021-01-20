@@ -5,7 +5,7 @@
 #ifndef SCC_ASTWRAPPER_HPP
 #define SCC_ASTWRAPPER_HPP
 
-#include "peglib.h"
+#include <scc/peglib.h>
 
 namespace scc {
 

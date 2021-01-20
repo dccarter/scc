@@ -5,7 +5,7 @@
 #ifndef SCC_META_HPP
 #define SCC_META_HPP
 
-#include "generator.hpp"
+#include <scc/generator.hpp>
 
 namespace scc {
 
