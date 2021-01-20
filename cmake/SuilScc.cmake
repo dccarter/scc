@@ -1,3 +1,11 @@
+if (NOT SUIL_SCC_DEFAULT_BINARY)
+    set(SUIL_SCC_DEFAULT_BINARY scc)
+endif()
+
+if (NOT TARGET Suil::Scc)
+    find_package(Scc REQUIRED)
+endif()
+
 #
 #! SuilScc : This function takes a collection of suil code scripts for a specific
 #  target and transpiles them into C/C++ code
@@ -17,7 +25,7 @@ function(SuilScc name)
     cmake_parse_arguments(SUIL_SCC "${options}" "${kvargs}" "${kvvargs}" ${ARGN})
 
     # Configure suil code compiler binary
-    set(scc scc)
+    set(scc ${SUIL_SCC_DEFAULT_BINARY})
     if (SUIL_SCC_BINARY)
         set(scc ${SUIL_SCC_BINARY})
     endif()
@@ -113,7 +121,7 @@ function(SuilSccGenerator name)
     add_library(${name} SHARED
             ${SUIL_SCC_GEN_SOURCES})
     # Target should depend on SCC lib
-    target_link_libraries(${name} scc)
+    target_link_libraries(${name} Suil::Scc)
 
     if (SUIL_SCC_GEN_LIBRARIES)
         # Additional libraries if any
