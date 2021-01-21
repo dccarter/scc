@@ -103,18 +103,18 @@ install(TARGETS scc-bin
         ARCHIVE DESTINATION lib)
 
 set(LIBRARY_HEADERS
-        include/exception.hpp
-        include/formatter.hpp
-        include/generator.hpp
-        include/includes.hpp
-        include/program.hpp
-        include/visitor.hpp)
+        include/scc/exception.hpp
+        include/scc/formatter.hpp
+        include/scc/generator.hpp
+        include/scc/includes.hpp
+        include/scc/program.hpp
+        include/scc/visitor.hpp)
 
 # Install library header files
 install(FILES ${LIBRARY_HEADERS}
         DESTINATION include/scc)
 # Might as well install clipp
-install(FILES include/clipp.hpp
+install(FILES include/scc/clipp.hpp
         DESTINATION include)
 
 install(FILES cmake/SuilScc.cmake
