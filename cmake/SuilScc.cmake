@@ -37,7 +37,7 @@ function(SuilScc name)
     endif()
 
     set(_name ${name})
-    if (PRIVATE)
+    if (SUIL_SCC_PRIVATE)
         set(_name ${name}-priv)
     endif()
 
