@@ -78,7 +78,7 @@ include(CMakePackageConfigHelpers)
 set(GENERATED_DIR  ${CMAKE_BINARY_DIR}/generated)
 set(VERSION_CONFIG ${GENERATED_DIR}/${PROJECT_NAME}ConfigVersion.cmake)
 set(PROJECT_CONFIG ${GENERATED_DIR}/${PROJECT_NAME}Config.cmake)
-set(TARGETS_EXPORT_NAME  ${PROJECT_NAME}Targets)
+set(SCC_TARGETS_EXPORT_NAME  ${PROJECT_NAME}Targets)
 set(NAMESPACE Suil::)
 
 # Configure '<PROJECT-NAME>Config.cmake.in'
@@ -92,7 +92,7 @@ write_basic_package_version_file(
         "${VERSION_CONFIG}" COMPATIBILITY SameMajorVersion)
 
 install(TARGETS Scc
-        EXPORT  ${TARGETS_EXPORT_NAME}
+        EXPORT  ${SCC_TARGETS_EXPORT_NAME}
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib)
@@ -128,7 +128,7 @@ install(FILES ${PROJECT_CONFIG} ${VERSION_CONFIG}
 
 # Install cmake targets
 #   * <prefix>/lib/cmake/SuilDbTargets.cmake
-install(EXPORT      ${TARGETS_EXPORT_NAME}
+install(EXPORT      ${SCC_TARGETS_EXPORT_NAME}
         NAMESPACE   ${NAMESPACE}
         DESTINATION lib/cmake/${PROJECT_NAME})
 
