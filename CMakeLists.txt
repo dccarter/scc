@@ -83,7 +83,7 @@ set(NAMESPACE Suil::)
 
 # Configure '<PROJECT-NAME>Config.cmake.in'
 configure_package_config_file(
-        ${CMAKE_SOURCE_DIR}/cmake/Config.cmake.in
+        ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Config.cmake.in
         ${PROJECT_CONFIG}
         INSTALL_DESTINATION lib/cmake/Suil${PROJECT_NAME})
 
