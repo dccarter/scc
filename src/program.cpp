@@ -974,7 +974,7 @@ namespace scc {
     void Include::fromAst(const AstWrapper& asw)
     {
         const auto& ast = asw();
-        if (ast.nodes[1]->original_tag == "string"_) {
+        if (ast.nodes[1]->original_tag == "str"_) {
             Left = '"';
             Right = '"';
         }
