@@ -436,7 +436,7 @@ namespace scc {
     class Class: public Type {
     public:
         Class(const AstWrapper& ast);
-        Class();
+        Class() = default;
         Vec<Base> BaseClasses;
 
         SCC_DISABLE_COPY(Class);
@@ -448,13 +448,39 @@ namespace scc {
     class Struct: public Type {
     public:
         Struct(const AstWrapper& ast);
-        Struct();
+        Struct() = default;
         bool IsUnion{false};
 
         SCC_DISABLE_COPY(Struct);
 
     protected:
         void fromAst(const AstWrapper& ast) override;
+    };
+
+    class EnumMember: public Node {
+    public:
+        EnumMember(const AstWrapper& ast);
+        EnumMember();
+
+        Vec<Attribute> Attribs;
+        Ident Name{};
+        std::string Value{};
+
+        SCC_DISABLE_COPY(EnumMember);
+
+    protected:
+        void fromAst(const AstWrapper& ) override;
+    };
+
+    class Enum: public Type {
+    public:
+        Enum(const AstWrapper& ast);
+        Enum() = default;
+        Ident Base;
+
+        SCC_DISABLE_COPY(Enum);
+    protected:
+        void fromAst(const AstWrapper &ast) override;
     };
 
     class Include: public Node {

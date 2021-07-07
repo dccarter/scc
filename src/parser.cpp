@@ -15,7 +15,11 @@ static const std::string BUILTIN_GRAMMAR = R"(
 program         <- _ before? namespace? after?
 namespace       <- namespacekey _ scoped _ '{' _ nscontent? _ '}' _
 namespacekey    <- 'namespace'
-nscontent       <- (variable / class / struct / native / comment / invoke)+
+nscontent       <- (variable / class / struct / native / comment / invoke / enum)+
+enum            <- enumkey _ attribs? _ ident (_ ':' _ ident)? _ '{' _ enumcontent? _ '}' sp ';' _
+enumcontent     <- (comment / (enummember sp ',' _))* enummember comment?
+enummember      <- attribs? _ ident (_ '=' _ int)?
+enumkey         <- 'enum'
 class           <- classkey _ attribs? _ ident (_ ':' _ bases)? _ '{' _ members? _ '}' sp ';' _
 classkey        <- 'class'
 struct          <- structkey _ attribs? _ ident _ '{' _ fields? _ '}' sp ';' _

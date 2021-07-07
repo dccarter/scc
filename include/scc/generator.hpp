@@ -38,6 +38,8 @@ namespace scc {
     class Node;
     class Program;
     class Type;
+    class Struct;
+    class Enum;
     class KeyValuePairs;
     class IncludeBag;
 

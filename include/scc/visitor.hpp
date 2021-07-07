@@ -208,14 +208,52 @@ namespace scc {
         }
 
         template<typename TT>
+        requires (std::is_same_v<T, Enum> and
+                  (std::is_same_v<Node, TT> or std::is_base_of_v<Node, TT>))
+        void visit(Func<TT> func)
+        {
+            if (func == nullptr) return;
+            const auto& klass = node.as<Enum>();
+
+            if constexpr (std::is_same_v<TT, Attribute>) {
+                for (const auto& atrr: klass.Attribs) {
+                    func(atrr);
+                }
+            }
+            else if constexpr (std::is_same_v<TT, GeneratorAttribute>) {
+                for (const auto& atrr: klass.Generators) {
+                    func(atrr);
+                }
+            }
+            else if constexpr (std::is_same_v<TT, Ident>) {
+                func(klass.Name);
+            }
+            else {
+                for (const auto &member: klass.Members) {
+                    if constexpr (std::is_same_v<TT, Node>) {
+                        func(*member);
+                    }
+                    else {
+                        if (member->is<TT>()) {
+                            func(member->as<TT>());
+                        }
+                    }
+                }
+            }
+        }
+
+        template<typename TT>
         requires (std::is_same_v<T, Type> and
                   (std::is_same_v<Node, TT> or std::is_base_of_v<Node, TT>))
         inline void visit(Func<TT> func) {
             if (node.is<Class>()) {
                 Visitor<Class>(node).visit(func);
             }
-            else {
+            else if (node.is<Struct>()) {
                 Visitor<Struct>(node).visit(func);
+            }
+            else {
+                Visitor<Enum>(node)(func);
             }
         }
 

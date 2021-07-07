@@ -38,5 +38,6 @@ namespace demo::scc {
     Demo::Demo(User user, User admin)
         : mUser(user), mAdmin(admin)
     {}
+
 #pragma endnative
 }

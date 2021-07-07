@@ -17,8 +17,7 @@ constructor     <- attribs? _ ident _ '(' (_ params)? _ ')' sp ';' _
 params          <- param (_ ',' _ param)*
 param           <- (const sp)? generic typemode? _ ident
 field           <- attribs? _ const? sp generic typemode? sp ident (sp fieldvalue)? sp ';' _
-fieldvalue      <- '{' (numext / literal) '}'
-numext          <- <number '_' ident>
+fieldvalue      <- '{' literal '}'
 generic         <- scoped '<' sp generic? (sp ',' sp generic)* '>' / scoped
 attribs         <- attrib (_ attrib)*
 attrib          <- '[[' attribname ('(' sp attribparams? sp ')')? ']]'
@@ -55,7 +54,7 @@ int             <- < [-+]? [1-9][0-9]* > / <[0]>
 string          <- str / rawstr
 str             <- < ["] <(!["] .)* > ["] >
 rawstr          <- 'R"(' < (!rawstrend .)* > rawstrend
-rawstrend       <- ')"'
+rawstrend       <- ')\"'
 comment         <- linecomment / blockcomment
 blockcomment    <- startcomment commentblock endcomment
 linecomment     <- '//' lcommentdetails _

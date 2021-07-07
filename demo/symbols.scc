@@ -1,6 +1,8 @@
 /*
  * The purpose of this file is to demonstrate generating symbol only content
  */
+#include "string.h"
+#include <cstring>
 
 #pragma symbol skip
 #pragma symbol ignore
@@ -17,3 +19,17 @@ namespace demo {
     }
 }
 #pragma endnative
+
+namespace demo {
+
+    enum [[gen::meta]] Categories : int {
+        Sports = 0,
+        Clothing,
+        Hardware = 10
+    };
+
+    enum [[gen::meta]] AccountType {
+        Admin,
+        System = 0
+    };
+}

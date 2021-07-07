@@ -194,7 +194,7 @@ namespace scc {
                     // invoke requested command using provided variables
                     invoke(fmt, node.as<Invoke>(), pg.space.mVars);
                 }
-                else if (node.is<Class>() || node.is<Struct>()) {
+                else if (node.is<Class>() || node.is<Struct>() || node.is<Enum>()) {
                     // generate classes and structs in files
                     fmt();
                     hppGenerateType(fmt, node.as<Type>());
@@ -265,7 +265,7 @@ namespace scc {
                 // invoke cpp generator
                 invoke(fmt, node.as<Invoke>(), pg.space.mVars);
             }
-            else if (node.is<Class>() || node.is<Struct>()) {
+            else if (node.is<Class>() || node.is<Struct>() || node.is<Enum>()) {
                 // generate classes and structs in files
                 cppGenerateType(fmt, node.as<Type>());
             }

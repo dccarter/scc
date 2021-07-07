@@ -14,7 +14,7 @@ namespace {
 
     void astUnrecognisedTag(const peg::Ast& ast)
     {
-        error() << ast.path << ":" << ast.line << " unrecognised syntax";
+        error() << ast.path << ":" << ast.line << " unrecognised syntax" << std::endl;
     }
 }
 
@@ -964,6 +964,87 @@ namespace scc {
         }
     }
 
+    Enum::Enum(const AstWrapper& asw)
+        : Type(typeid(Enum).hash_code())
+    {
+        fromAst(asw);
+        extractGenerators();
+    }
+
+    void Enum::fromAst(const AstWrapper& asw)
+    {
+        const auto& ast = asw();
+        int off{1};
+
+        if (ast.nodes[off]->original_tag == "attribs"_) {
+            Attribute::buildAttributes(Attribs, ast.nodes[off++]);
+        }
+
+        Name = Ident{ast.nodes[off++]};
+        if (ast.nodes.size() == off) {
+            return;
+        }
+
+        if (ast.nodes[off]->original_tag == "ident"_) {
+            Base = Ident{ast.nodes[off++]};
+        }
+        if (ast.nodes.size() == off) {
+            return;
+        }
+
+        auto buildMember = [this](const peg::Ast& member) {
+            switch (member.tag) {
+                case "comment"_:
+                case "blockcomment"_:
+                case "lcommentdetails"_:
+                    Members.push_back(std::make_shared<Comment>(member));
+                    break;
+                case "native"_:
+                    Members.push_back(std::make_shared<Native>(member));
+                    break;
+                case "ident"_:
+                case "enummember"_:
+                    Members.push_back(std::make_shared<EnumMember>(member));
+                    break;
+                default:
+                    throw Exception("unexpected tag '", member.tag, "' at ", member.path, ":", member.line);
+            };
+        };
+
+        const auto& members = ast.nodes[off];
+        if (members->tag != "enumcontent"_) {
+            buildMember(*members);
+        }
+        else {
+            for (const auto& member: members->nodes) {
+                buildMember(*member);
+            }
+        }
+    }
+
+    _NODE_CTOR(EnumMember)
+
+    void EnumMember::fromAst(const AstWrapper& asw)
+    {
+        const auto& ast = asw();
+        if (ast.tag == "ident"_) {
+            Name = Ident{ast};
+            return;
+        }
+
+        int off{0};
+        if (ast.nodes[off]->original_tag == "attribs"_) {
+            Attribute::buildAttributes(Attribs, ast.nodes[off++]);
+        }
+
+        // get the name of the member
+        Name = Ident{ast.nodes[off++]};
+        if (off < ast.nodes.size()) {
+            // enum assigned value
+            Value = ast.nodes[off]->token;
+        }
+    }
+
     _NODE_CTOR(Include)
 
     void Include::toString(Formatter &fmt) const
@@ -1095,6 +1176,9 @@ namespace scc {
                 case "invokecmd"_:
                 case "invoke"_:
                     Content.push_back(std::make_shared<Invoke>(content));
+                    break;
+                case "enum"_:
+                    Content.push_back(std::make_shared<Enum>(content));
                     break;
                 default:
                     astUnrecognisedTag(content);
