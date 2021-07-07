@@ -54,6 +54,19 @@ std::ostream &debug(std::ostream& os, Log lv) {
 
 namespace scc {
 
+    const KeyValuePairs& GeneratorVariables::var(const std::string& name) const
+    {
+        if (mVariables == nullptr) {
+            return Variables::INVALID;
+        }
+        return (*mVariables)[name];
+    }
+
+    const Literal& GeneratorVariables::get(const std::string& varName, const std::string& name)
+    {
+        return var(varName)[name];
+    }
+
     void registerLibGenerator(Context ctx, const std::string& name,
                               std::shared_ptr<HppGenerator> headerGenerator,
                               std::shared_ptr<CppGenerator> sourceGenerator)

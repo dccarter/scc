@@ -183,6 +183,8 @@ namespace scc {
         valid = true;
     }
 
+    const KeyValuePairs Variables::INVALID = {};
+
     bool Variables::has(const std::string& name) const
     {
         return mList.contains(name);
@@ -192,7 +194,6 @@ namespace scc {
     {
         auto it = mList.find(name);
         if (it == mList.cend()) {
-            static const KeyValuePairs INVALID;
             return INVALID;
         }
         return it->second;

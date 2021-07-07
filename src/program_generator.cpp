@@ -75,8 +75,10 @@ namespace scc {
             if (!loaded) {
                 throw Exception("library {name: ", lib.Name.Content, ", path: ", lib.Path, "} not found");
             }
+
             debug(Log::LV2) << " library '" << lib.Name.Content << "' loaded";
             mHasSourceGenerators = mHasSourceGenerators || loaded->hasSourceGenerators();
+            loaded->setVariables(pg.before.mVars);
             mGenerators.emplace(lib.Name.Content, std::move(loaded));
         });
 

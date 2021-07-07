@@ -184,6 +184,7 @@ namespace scc {
 
     class Variables final {
     public:
+        static const KeyValuePairs INVALID;
         Variables() = default;
         bool has(const std::string& name) const;
         const KeyValuePairs& operator[](const std::string& name) const;

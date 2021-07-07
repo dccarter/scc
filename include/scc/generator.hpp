@@ -42,12 +42,24 @@ namespace scc {
     class Enum;
     class KeyValuePairs;
     class IncludeBag;
+    class Variables;
+    class Literal;
 
+    class GeneratorVariables {
+    public:
+        GeneratorVariables() = default;
+        const KeyValuePairs& var(const std::string& name) const;
+        const Literal& get(const std::string& var, const std::string& name);
+
+    private:
+        friend class GeneratorLib;
+        const Variables* mVariables{nullptr};
+    };
     /**
      * A header generator is should be implemented to generate headers
      * for so suil code file
      */
-    class HppGenerator {
+    class HppGenerator : public GeneratorVariables {
     public:
         /**
          * Invoked by program generator to allow a specific generator to
@@ -81,7 +93,7 @@ namespace scc {
      * A source generator should be implemented to generate C++ implementation
      * code for so suil code file
      */
-    class CppGenerator {
+    class CppGenerator : public  GeneratorVariables {
     public:
         /**
          * Used to generate source code for a Type. This function will
