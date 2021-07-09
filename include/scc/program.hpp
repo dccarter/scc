@@ -258,7 +258,7 @@ namespace scc {
         Scoped();
         Vec<Ident> Parts;
         void toString(Formatter &fmt) const override;
-
+        std::string toString() const;
         SCC_DISABLE_COPY(Scoped);
 
     protected:

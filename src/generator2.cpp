@@ -70,14 +70,16 @@ namespace scc {
         return std::move(generatorLib);
     }
 
-    void GeneratorLib::setVariables(const Variables& variables)
+    void GeneratorLib::setVariables(const Variables& variables, const std::string& ns)
     {
         for (auto& hg: mHppGenerators) {
             hg.second->mVariables = &variables;
+            hg.second->mNamespace = ns;
         }
 
         for (auto& cg: mCppGenerators) {
             cg.second->mVariables = &variables;
+            cg.second->mNamespace = ns;
         }
     }
 

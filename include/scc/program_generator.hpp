@@ -47,7 +47,7 @@ namespace scc {
         GeneratorLib(GeneratorLib&&) = delete;
         GeneratorLib& operator=(GeneratorLib&&) = delete;
         friend class ProgramGenerator;
-        void setVariables(const Variables& variables);
+        void setVariables(const Variables& variables, const std::string& ns);
         HppGenerators mHppGenerators;
         CppGenerators mCppGenerators;
         Handle mLibHandle{nullptr};

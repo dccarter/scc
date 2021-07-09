@@ -78,7 +78,7 @@ namespace scc {
 
             debug(Log::LV2) << " library '" << lib.Name.Content << "' loaded";
             mHasSourceGenerators = mHasSourceGenerators || loaded->hasSourceGenerators();
-            loaded->setVariables(pg.before.mVars);
+            loaded->setVariables(pg.before.mVars, pg.space.Name.toString());
             mGenerators.emplace(lib.Name.Content, std::move(loaded));
         });
 

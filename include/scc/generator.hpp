@@ -50,10 +50,11 @@ namespace scc {
         GeneratorVariables() = default;
         const KeyValuePairs& var(const std::string& name) const;
         const Literal& get(const std::string& var, const std::string& name);
-
+        const std::string& getNamespace() const { return mNamespace; }
     private:
         friend class GeneratorLib;
         const Variables* mVariables{nullptr};
+        std::string mNamespace{};
     };
     /**
      * A header generator is should be implemented to generate headers

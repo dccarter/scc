@@ -322,6 +322,17 @@ namespace scc {
         }
     }
 
+    std::string Scoped::toString() const
+    {
+        std::stringstream  ss;
+        for (const auto& part: Parts) {
+            if (&part != &Parts.front()) {
+                ss << "::";
+            }
+            ss << part.Content;
+        }
+    }
+
     void Scoped::fromAst(const AstWrapper& asw)
     {
         const auto& ast = asw.ast;
