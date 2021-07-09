@@ -331,6 +331,7 @@ namespace scc {
             }
             ss << part.Content;
         }
+        return ss.str();
     }
 
     void Scoped::fromAst(const AstWrapper& asw)
