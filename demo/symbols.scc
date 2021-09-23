@@ -1,0 +1,35 @@
+/*
+ * The purpose of this file is to demonstrate generating symbol only content
+ */
+#include "string.h"
+#include <cstring>
+
+#pragma symbol skip
+#pragma symbol ignore
+
+#pragma native
+#define var(x) s::_##x
+#define prop(x, v) ::var(x) = v
+#pragma endnative
+
+#pragma native[cpp]
+namespace demo {
+    void dummyDemo() {
+        // just for demonstration purposes
+    }
+}
+#pragma endnative
+
+namespace demo {
+
+    enum [[gen::meta]] Categories : int {
+        Sports = 0,
+        Clothing,
+        Hardware = 10
+    };
+
+    enum [[gen::meta]] AccountType {
+        Admin,
+        System = 0
+    };
+}
