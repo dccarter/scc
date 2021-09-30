@@ -1,5 +1,5 @@
 /*
- * The purpose of this file is to demonstrate generating symbol only content
+ * The purpose of this file is to demonstrate generating basic code
  */
 #include "string.h"
 #include <cstring>
@@ -22,14 +22,22 @@ namespace demo {
 
 namespace demo {
 
-    enum [[gen::meta]] Categories : int {
+    enum [[gen(meta/meta)]] Categories : int {
         Sports = 0,
         Clothing,
         Hardware = 10
     };
 
-    enum [[gen::meta]] AccountType {
+    enum [[gen(meta/meta)]] AccountType {
         Admin,
         System = 0
+    };
+
+    struct [[gen(meta/meta)]] User {
+        [[$meta(0, {ignore: true})]]
+        std::string Email;
+
+        [[$meta(1, {skip: true})]]
+        int    Age{6};
     };
 }

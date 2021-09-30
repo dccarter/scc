@@ -18,7 +18,14 @@ namespace scc {
 
         const auto& ct = type.as<Class>();
         Line(fmt) << "class";
-        Attribute::toString(fmt, ct.Attribs);
+        if (ct.Generators) {
+            fmt << " " << ct.Generators;
+        }
+
+        if (ct.Annotations) {
+            fmt << " " << ct.Annotations;
+        }
+
         fmt << ' ' << ct.Name;
         fmt << " : public demo::Debug";
         if (!ct.BaseClasses.empty()) {
@@ -52,23 +59,32 @@ namespace scc {
                 Line(fmt1) << name << ":";
                 var.toString(fmt1);
             }
-            --fmt1;
+            --Line(fmt1);
         }
     }
 
     void DemoCppGenerator::generate(Formatter& fmt, const std::string& klass, const Field& field)
     {
-        auto dbg = Attribute::find(field.Attribs, {"demo", "debug"});
-        if (dbg and !dbg().empty()) {
+        auto& dbg = field.Annotations[ {"demo", "debug"}];
+        if (dbg) {
+            if (dbg.NamedParams) {
+                throw Exception("annotation demo/debug does not support named parameters");
+            }
+
             Line(fmt) << R"(dbp << ")" << field.Name.Content << R"( : {";)";
-            const auto& params = dbg();
             //  os << "mUser = {";
             //  Email: " << mUser.Email << ", Age: " << mUser.Age << "}";
-            for (const auto& param: params) {
-                if (&param != &params.front()) {
+            for (const auto& param: dbg.PositionalParam) {
+                if (!param.has<std::string>()) {
+                    throw Exception("annotation demo/debug only accepts string field names");
+                }
+
+                if (&param != &dbg.PositionalParam.front()) {
                     Line(fmt) << R"(dbp << ", ";)";
                 }
-                Line(fmt) << R"(dbp << ")" << param.Content << R"(: " << )" << field.Name.Content << "." << param.Content << ";";
+
+                const std::string& value = param;
+                Line(fmt) << R"(dbp << ")" << value << R"(: " << )" << field.Name.Content << "." << value << ";";
             }
             Line(fmt) << R"(dbp << "}";)";
         }

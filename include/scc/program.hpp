@@ -13,6 +13,7 @@
 #include <typeinfo>
 #include <vector>
 #include <unordered_map>
+#include "peglib.h"
 
 struct mpc_ast_t;
 
@@ -40,6 +41,14 @@ namespace scc {
     using Vec = std::vector<T>;
     template <typename T>
     using Set = std::set<T>;
+
+    struct Source {
+        Source() = default;
+        Source(const peg::Ast& ast);
+        std::string_view Path{};
+        std::size_t Line{0};
+        std::size_t Column{0};
+    };
 
     class Node {
     public:
@@ -86,12 +95,18 @@ namespace scc {
             return *(dynamic_cast<T *>(this));
         }
 
+        const Source& src() const { return _source; }
+
     protected:
         Node() = default;
         Node(std::size_t id)
             : Tag(id)
         {}
         virtual void fromAst(const AstWrapper& ast) {}
+
+    protected:
+        Source _source{};
+        static std::string _sPath;
     };
 
     class Ident : public Node {
@@ -100,7 +115,8 @@ namespace scc {
         Ident();
         std::string Content{};
         void toString(Formatter &fmt) const override;
-
+        bool operator==(const std::string& name) const { return Content == name; }
+        bool operator!=(const std::string& name) const { return Content != name; }
         SCC_DISABLE_COPY(Ident);
 
     protected:
@@ -149,7 +165,7 @@ namespace scc {
         template<typename T>
             requires IsLiteralAlternative<T>
         operator const T&() const {
-            static_assert(!std::is_same_v<T, NumberExpr>(), "Number expression cannot be converted to values");
+            // static_assert(!std::is_same_v<T, NumberExpr>(), "Number expression cannot be converted to values");
             return std::get<T>(Value);
         }
 
@@ -317,6 +333,85 @@ namespace scc {
         void fromAst(const AstWrapper &ast) override;
     };
 
+    using KVPParams = KeyValuePairs;
+
+    class Annotation : public Node {
+    public:
+        Annotation(const AstWrapper& ast);
+        Annotation();
+        SCC_DISABLE_COPY(Annotation);
+
+        Vec<Ident>   Name;
+        Vec<Literal> PositionalParam{};
+        KVPParams    NamedParams{};
+        const Literal& get(int index, const std::string& name) const;
+        operator bool() const { return _valid; }
+        bool operator==(const Vec<std::string>& name) const;
+        bool operator!=(const Vec<std::string>& name) const { return !(*this == name); }
+        void toString(Formatter &fmt) const override;
+
+    protected:
+        void fromAst(const AstWrapper &ast) override;
+
+    private:
+        bool _valid{true};
+    };
+
+    class AnnotationList : public Node {
+    public:
+        AnnotationList(const AstWrapper& ast);
+        AnnotationList();
+        SCC_DISABLE_COPY(AnnotationList);
+
+        operator bool() const { return !_annotations.empty(); }
+
+        void toString(Formatter &fmt) const override;
+        const Annotation& operator[](const Vec<std::string>& name) const;
+        const Vec<Annotation>& operator()() const { return _annotations; }
+    protected:
+        void fromAst(const AstWrapper &ast) override;
+
+    private:
+        friend class Type;
+        Vec<Annotation> _annotations{};
+    };
+
+    class Generator: public Node {
+    public:
+        Generator(const AstWrapper& ast);
+        Generator();
+        SCC_DISABLE_COPY(Generator);
+
+        Vec<Ident> Name;
+
+        operator bool() const { return _valid; }
+        void toString(Formatter &fmt) const override;
+
+    protected:
+        void fromAst(const AstWrapper &ast) override;
+
+    private:
+        bool _valid{false};
+    };
+
+    class GeneratorList: public Node {
+    public:
+        GeneratorList(const AstWrapper& ast);
+        GeneratorList();
+        SCC_DISABLE_COPY(GeneratorList);
+
+        operator bool() const { return !_generators.empty(); }
+        void toString(Formatter &fmt) const override;
+        const Generator& operator[](Vec<std::string>& name) const;
+        const Vec<Generator>& operator()() const { return _generators; }
+    protected:
+        void fromAst(const AstWrapper &ast) override;
+
+    private:
+        friend class Type;
+        Vec<Generator> _generators;
+    };
+
     class Modifier: public Node {
     public:
         Modifier(const AstWrapper& ast);
@@ -334,7 +429,7 @@ namespace scc {
     public:
         Field(const AstWrapper& ast);
         Field();
-        Vec<Attribute> Attribs;
+        AnnotationList  Annotations;
         Generic        Type;
         Ident          Name;
         std::string    Kind;
@@ -352,9 +447,10 @@ namespace scc {
         Parameter(const AstWrapper& ast);
         Parameter();
         bool        Const{false};
-        Generic     Type;
-        std::string Kind;
-        Ident       Name;
+        AnnotationList  Annotations;
+        Generic      Type;
+        std::string  Kind;
+        Ident        Name;
         void toString(Formatter &fmt) const override;
         static void buildParameters(Vec<Parameter>& params, const AstWrapper& asw);
 
@@ -368,7 +464,7 @@ namespace scc {
     public:
         Method(const AstWrapper& ast);
         Method();
-        Vec<Attribute> Attribs;
+        AnnotationList  Annotations;
         struct RType {
             bool        Const{false};
             Generic     Type;
@@ -392,7 +488,7 @@ namespace scc {
     public:
         Constructor(const AstWrapper& ast);
         Constructor();
-        Vec<Attribute> Attribs;
+        AnnotationList  Annotations;
         Ident  Name;
         Vec<Parameter> Params;
         void toString(Formatter &fmt) const override;
@@ -428,17 +524,19 @@ namespace scc {
     public:
         Type(std::size_t id);
         Type();
-        Vec<Attribute> Attribs;
-        Vec<GeneratorAttribute> Generators;
+        SCC_DISABLE_COPY(Type);
+
+        AnnotationList  Annotations;
+        GeneratorList Generators;
         Ident Name;
         Vec<Node::Ptr> Members;
 
         void toString(Formatter &fmt) const override;
 
-        SCC_DISABLE_COPY(Type);
+
 
     protected:
-        void extractGenerators();
+        void parseGenAnno(const peg::Ast& ast);
         void fromAst(const AstWrapper& ast) override {}
     };
 
@@ -471,7 +569,7 @@ namespace scc {
         EnumMember(const AstWrapper& ast);
         EnumMember();
 
-        Vec<Attribute> Attribs;
+        AnnotationList Annotations;
         Ident Name{};
         std::string Value{};
 
@@ -618,5 +716,10 @@ inline std::ostream& operator<<(std::ostream& os, const scc::Node& node)
 {
     node.toString(os);
     return os;
+}
+
+inline std::ostream& operator<<(std::ostream& os, const scc::Source& src)
+{
+    return (os << src.Path << ":" << src.Line << ":" << src.Column);
 }
 

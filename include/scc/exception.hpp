@@ -12,6 +12,7 @@
 namespace scc {
     class Node;
     class AstWrapper;
+    struct Source;
 
     class Exception : std::exception {
     public:
@@ -34,6 +35,15 @@ namespace scc {
             mMessage = ss.str();
         }
 
+        template<typename ...Args>
+        Exception(const Source& src, const Args... args) noexcept
+        {
+            std::stringstream ss;
+            buildMessage(ss, src);
+            (ss << ... << args);
+            mMessage = ss.str();
+        }
+
         operator bool() const;
 
         const char* what() const noexcept override;
@@ -42,6 +52,7 @@ namespace scc {
         static Exception fromCurrent();
     private:
         void buildMessage(std::ostream& os, const AstWrapper& astWrapper);
+        void buildMessage(std::ostream& os, const Source& src);
         Exception()
             : valid{false}
         {}

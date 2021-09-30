@@ -26,11 +26,21 @@ namespace scc {
         : Node(typeid( Tp ).hash_code())         \
     {                                            \
             fromAst(asw);                        \
+            _source = Source{asw()};             \
+            _source.Path =  Node::_sPath;        \
     }                                            \
     Tp :: Tp ()                                  \
         : Node (typeid( Tp ).hash_code())        \
     {}
 
+    Source::Source(const peg::Ast& ast)
+        : Path{ast.path},
+          Line{ast.line},
+          Column{ast.column}
+    {}
+
+
+    std::string Node::_sPath{};
 
     void Node::toString(std::ostream& os) const
     {
@@ -83,22 +93,22 @@ namespace scc {
     void Literal::fromAst(const AstWrapper& asw)
     {
         const auto& ast = asw();
-        auto convert = [](const std::string& str, int base = 10) -> int64_t  {
+        auto convert = [&](const std::string& str, int base = 10) -> int64_t  {
             try {
                 return std::stoll(str, nullptr, base);
             }
             catch (...) {
                 auto ex = Exception::fromCurrent();
-                throw Exception("error converting '", str, "' to number: ", ex.what());
+                throw Exception(ast, "error converting '", str, "' to number: ", ex.what());
             }
         };
-        auto convert2 = [](const std::string& str) -> double  {
+        auto convert2 = [&](const std::string& str) -> double  {
             try {
                 return std::stod(str);
             }
             catch (...) {
                 auto ex = Exception::fromCurrent();
-                throw Exception("error converting '", str, "' to number: ", ex.what());
+                throw Exception(ast, "error converting '", str, "' to number: ", ex.what());
             }
         };
 
@@ -132,7 +142,7 @@ namespace scc {
                 Value = convert2(ast.token);
                 break;
             default:
-                throw Exception("unrecognised tag at '", ast.name, "' ", ast.path, ":", ast.line);
+                throw Exception(ast, "unrecognised tag at '", ast.name, "' in Literal");
         }
         valid = true;
     }
@@ -204,7 +214,7 @@ namespace scc {
         const auto& ast = asw();
         Ident name{ast.nodes[0]};
         if (mList.contains(name.Content)) {
-            throw Exception(ast.path, ":", ast.line, " - variable '", name.Content, "' already declared");
+            throw Exception(ast, " - variable '", name.Content, "' already declared");
         }
         mList.emplace(std::move(name.Content), KeyValuePairs{ast.nodes[1]});
     }
@@ -454,7 +464,7 @@ namespace scc {
                     }
                     break;
                 default:
-                    throw Exception("unreachable code");
+                    throw Exception(n, "Invalid attribute name");
             }
         };
 
@@ -529,6 +539,208 @@ namespace scc {
         return AttributeParams{};
     }
 
+    _NODE_CTOR(Generator);
+
+    void Generator::fromAst(const AstWrapper& asw)
+    {
+        const auto& ast = asw.ast;
+        auto buildGenerator = [&](const peg::Ast& node) {
+            if (node.tag == "ident"_) {
+                Name.push_back(Ident{node});
+                Name.push_back(Ident{node});
+            }
+            else {
+                Name.push_back(Ident{node.nodes[0]});
+                Name.push_back(Ident{node.nodes[1]});
+            }
+        };
+
+        if (ast.tag == "gennames"_) {
+            for (auto& node: ast.nodes) {
+                buildGenerator(*node);
+            }
+        }
+        else {
+            buildGenerator(ast);
+        }
+        _valid = true;
+    }
+
+    void Generator::toString(Formatter& fmt) const
+    {
+        fmt << Name[0];
+        if (Name.size() == 2) {
+            fmt << "/" << Name[1];
+        }
+    }
+
+_NODE_CTOR(GeneratorList);
+
+    void GeneratorList::fromAst(const AstWrapper& asw)
+    {
+        const auto& ast = asw.ast;
+        if (ast.tag == "gennames"_) {
+            for (auto& node: ast.nodes) {
+                _generators.push_back(Generator{*node});
+            }
+        }
+        else {
+            _generators.push_back(Generator{ast});
+        }
+    }
+
+    const Generator& GeneratorList::operator[](Vec<std::string>& name) const
+    {
+        for (auto& gen: _generators) {
+            if (gen.Name.size() != name.size()) {
+                continue;
+            }
+            if (gen.Name[0].Content != name[0]) {
+                continue;
+            }
+
+            if (gen.Name.size() == 2 && gen.Name[1].Content == name[1]) {
+                return gen;
+            }
+        }
+
+        static Generator INVALID_GENERATOR;
+        return INVALID_GENERATOR;
+    }
+
+    static inline bool _when(bool& v) { if (!v) return true; v = false; return  false; }
+    #define when(x) if (_when(x))
+
+    void GeneratorList::toString(Formatter& fmt) const
+    {
+        fmt << "[[gen(";
+        bool first{true};
+        for (auto& gen: _generators) {
+            when(first) fmt << ", ";
+            fmt << gen;
+        }
+        fmt << ")]]";
+    }
+
+    _NODE_CTOR(Annotation);
+
+    void Annotation::fromAst(const AstWrapper& asw)
+    {
+        const auto& ast = asw.ast;
+        auto buildAnnotationName = [&](const peg::Ast& node) {
+            for (int i = 1; i < node.nodes.size(); i++) {
+                Name.push_back(Ident{node.nodes[i]});
+            }
+        };
+
+        auto buildParams = [&](const peg::Ast& node) {
+            if (node.tag == "kvps"_ or node.tag == "kvp"_) {
+                NamedParams = KeyValuePairs{node};
+            }
+            else if (node.tag == "annotposparams"_) {
+                for (auto& n: node.nodes) {
+                    PositionalParam.push_back(Literal{n});
+                }
+            }
+            else {
+                PositionalParam.push_back(Literal{node});
+            }
+        };
+
+        if (ast.tag == "annotname"_) {
+            buildAnnotationName(ast);
+        }
+        else {
+            buildAnnotationName(*ast.nodes[0]);
+            const auto& params = *ast.nodes[1];
+            if (params.tag == "annotparams"_) {
+                for (auto& p: params.nodes) {
+                    buildParams(*p);
+                }
+            }
+            else if (params.original_tag != "linecomment"_) {
+                // ignoring all comments attached to attributes
+                buildParams(params);
+            }
+        }
+        _valid = true;
+    }
+
+    bool Annotation::operator==(const Vec<std::string>& name) const
+    {
+        if (Name.size() != name.size()) {
+            return false;
+        }
+        for (int i = 0; i < name.size(); i++) {
+            if (Name[i] != name[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    void Annotation::toString(Formatter& fmt) const
+    {
+        fmt << "[[$";
+        for (int i = 0 ; i < Name.size(); i++) {
+            if (i) fmt << "::";
+            fmt << Name[i];
+        }
+        fmt << "(";
+        if (!PositionalParam.empty()) {
+            for (int i = 0; i < PositionalParam.size(); i++) {
+                if(i) fmt << ", ";
+                fmt << PositionalParam[i];
+            }
+        }
+        if (NamedParams) {
+            if (!PositionalParam.empty()) fmt << ", ";
+            fmt << "{";
+            bool first{true};
+            for (auto& [key, value]: NamedParams()) {
+                when(first) fmt << ", ";
+                fmt << key <<  ":" << value;
+            }
+            fmt << "}";
+        }
+        fmt << ")]]";
+    }
+
+    _NODE_CTOR(AnnotationList);
+
+    void AnnotationList::fromAst(const AstWrapper& asw)
+    {
+        const auto& ast = asw.ast;
+        if (ast.tag == "annotations"_) {
+            for (auto& node: ast.nodes) {
+                _annotations.push_back(Annotation{*node});
+            }
+        }
+        else {
+            _annotations.push_back(Annotation{ast});
+        }
+    }
+
+    const Annotation& AnnotationList::operator[](const Vec<std::string>& name) const
+    {
+        for (auto& ann : _annotations) {
+            if (ann == name) {
+                return ann;
+            }
+        }
+        static Annotation INVALID_ANNOTATION;
+        return INVALID_ANNOTATION;
+    }
+
+    void AnnotationList::toString(Formatter& fmt) const
+    {
+        bool first{true};
+        for (auto& ann: _annotations) {
+            when(first) Line(fmt);
+            fmt << ann;
+        }
+    }
+
     _NODE_CTOR(Modifier);
 
     void Modifier::toString(Formatter &fmt) const
@@ -546,9 +758,9 @@ namespace scc {
 
     void Field::toString(Formatter &fmt) const
     {
-        if (!Attribs.empty()) {
+        if (Annotations) {
             Line(fmt);
-            Attribute::toString(fmt, Attribs);
+            fmt << Annotations;
         }
         Line(fmt);
         if (Const) {
@@ -571,8 +783,8 @@ namespace scc {
     {
         const auto& ast = asw();
         int off{0};
-        if (ast.nodes[off]->original_tag == "attribs"_) {
-            Attribute::buildAttributes(Attribs, ast.nodes[off++]);
+        if (ast.nodes[off]->original_tag == "annotations"_) {
+            Annotations = AnnotationList{ast.nodes[off++]};
         }
         if (ast.nodes[off]->original_tag == "const"_) {
             Const = true;
@@ -593,6 +805,10 @@ namespace scc {
 
     void Parameter::toString(Formatter &fmt) const
     {
+        if (Annotations) {
+            fmt << Annotations << " ";
+        }
+
         if (Const) {
             fmt << "const ";
         }
@@ -605,6 +821,10 @@ namespace scc {
     {
         const auto& ast = asw();
         int off{0};
+        if (ast.nodes[off]->original_tag == "annotations"_) {
+            Annotations = AnnotationList{ast.nodes[off++]};
+        }
+
         if (ast.nodes[off]->original_tag == "const"_) {
             Const = true;
             off++;
@@ -644,8 +864,8 @@ namespace scc {
 
     void Method::toString0(Formatter &fmt) const
     {
-        if (!Attribs.empty()) {
-            Attribute::toString(fmt, Attribs);
+        if (Annotations) {
+            fmt << Annotations;
             Line(fmt);
         }
 
@@ -664,7 +884,7 @@ namespace scc {
             if (&param != &Params.front()) {
                 fmt << ", ";
             }
-            param.toString(fmt);
+            fmt << param;
         }
         fmt << ")";
         if (Const) {
@@ -684,8 +904,8 @@ namespace scc {
     {
         const auto& ast = asw();
         int off{0};
-        if (ast.nodes[off]->original_tag == "attribs"_) {
-            Attribute::buildAttributes(Attribs, ast.nodes[off++]);
+        if (ast.nodes[off]->original_tag == "annotations"_) {
+            Annotations = AnnotationList{ast.nodes[off++]};
         }
 
         if (ast.nodes[off]->original_tag == "const"_) {
@@ -711,18 +931,18 @@ namespace scc {
 
     void Constructor::toString(Formatter &fmt) const
     {
-        if (!Attribs.empty()) {
+        if (Annotations) {
+            fmt << Annotations;
             Line(fmt);
-            Attribute::toString(fmt, Attribs);
         }
-        Line(fmt);
+
         Name.toString(fmt);
         fmt << '(';
         for (const auto& param: Params) {
             if (&param != &Params.front()) {
                 fmt << ", ";
             }
-            param.toString(fmt);
+            fmt << param;
         }
         fmt << ");";
     }
@@ -736,9 +956,10 @@ namespace scc {
         }
 
         int off{0};
-        if (ast.nodes[off]->original_tag == "attribs"_) {
-            Attribute::buildAttributes(Attribs, ast.nodes[off++]);
+        if (ast.nodes[off]->original_tag == "annotations"_) {
+            Annotations = AnnotationList{ast.nodes[off++]};
         }
+
         Name = Ident{ast.nodes[off++]};
         if (ast.nodes.size() > off) {
             Parameter::buildParameters(Params, ast.nodes[off]);
@@ -793,10 +1014,15 @@ namespace scc {
     void Type::toString(Formatter &fmt) const
     {
         Line(fmt) << (is<Class>()? "class " : "struct ");
-        Attribute::toString(fmt, Attribs);
-        fmt << ' ';
-        Name.toString(fmt);
-        fmt << ' ';
+        if (Generators) {
+            fmt << Generators << " ";
+        }
+        if (Annotations) {
+            fmt << Annotations << " ";
+        }
+
+        fmt << Name << ' ';
+
         if (is<Class>()) {
             auto& klass = as<Class>();
             if (!klass.BaseClasses.empty()) {
@@ -827,6 +1053,27 @@ namespace scc {
         : Node(id)
     {}
 
+    void Type::parseGenAnno(const peg::Ast& ast)
+    {
+        auto buildGenAnno = [&](const peg::Ast& node) {
+            if (node.tag == "generator"_) {
+                Generators._generators.push_back(Generator{node.nodes[1]});
+            }
+            else {
+                Annotations._annotations.push_back(Annotation{node});
+            }
+        };
+
+        if (ast.tag == "genanno"_) {
+            for (auto& node: ast.nodes) {
+                buildGenAnno(*node);
+            }
+        }
+        else {
+            buildGenAnno(ast);
+        }
+    }
+
     GeneratorAttribute::GeneratorAttribute(const AstWrapper &asw)
         : Attribute(asw)
     {
@@ -838,43 +1085,18 @@ namespace scc {
         Tag = typeid(GeneratorAttribute).hash_code();
     }
 
-    void Type::extractGenerators()
-    {
-        auto it = Attribs.begin();
-        while (it != Attribs.cend()) {
-            if (Attribute::isGenerator(*it)) {
-                GeneratorAttribute gattr;
-                gattr.Name = std::move(it->Name);
-                if (gattr.Name[1].Content == "meta") {
-                    Ident p;
-                    p.Content = "meta";
-                    gattr.Params.push_back(std::move(p));
-                }
-                else {
-                    gattr.Params = std::move(it->Params);
-                }
-                Generators.push_back(std::move(gattr));
-                it = Attribs.erase(it);
-            }
-            else {
-                it = std::next(it, 1);
-            }
-        }
-    }
-
     Class::Class(const AstWrapper& asw)
         : Type(typeid(Class).hash_code())
     {
         fromAst(asw);
-        extractGenerators();
     }
 
     void Class::fromAst(const AstWrapper& asw)
     {
         const auto& ast = asw();
         int off{1};
-        if (ast.nodes[off]->original_tag == "attribs"_) {
-            Attribute::buildAttributes(Attribs,ast.nodes[off++]);
+        if (ast.nodes[off]->original_tag == "genanno"_) {
+            parseGenAnno(*ast.nodes[off++]);
         }
 
         Name = Ident{ast.nodes[off++]};
@@ -904,12 +1126,18 @@ namespace scc {
                 case "method"_:
                     Members.push_back(std::make_shared<Method>(member));
                     break;
+                case "nestedenum"_:
+                    Members.push_back(std::make_shared<Enum>(member));
+                    break;
+                case "nestedstruct"_:
+                    Members.push_back(std::make_shared<Struct>(member));
+                    break;
                 case "constructor"_:
                 case "ident"_:
                     Members.push_back(std::make_shared<Constructor>(member));
                     break;
                 default:
-                    throw Exception("Unrecognised tag '", member.name, "' at ", member.path, ":", member.line);
+                    throw Exception(member, "unrecognised tag '", member.name, "' in class");
             };
         };
 
@@ -928,7 +1156,6 @@ namespace scc {
         : Type(typeid(Struct).hash_code())
     {
         fromAst(asw);
-        extractGenerators();
     }
 
     void Struct::fromAst(const AstWrapper& asw)
@@ -936,9 +1163,10 @@ namespace scc {
         const auto& ast = asw();
         IsUnion = ast.nodes[0]->token == "union";
         int off{1};
-        if (ast.nodes[off]->original_tag == "attribs"_) {
-            Attribute::buildAttributes(Attribs, ast.nodes[off++]);
+        if (ast.nodes[off]->original_tag == "genanno"_ || ast.nodes[off]->original_tag == "annotations"_) {
+            parseGenAnno(*ast.nodes[off++]);
         }
+
         Name = Ident{ast.nodes[off++]};
         if (ast.nodes.size() == off) {
             // empty struct
@@ -958,8 +1186,14 @@ namespace scc {
                 case "field"_:
                     Members.push_back(std::make_shared<Field>(member));
                     break;
+                case "nestedenum"_:
+                    Members.push_back(std::make_shared<Enum>(member));
+                    break;
+                case "nestedstruct"_:
+                    Members.push_back(std::make_shared<Struct>(member));
+                    break;
                 default:
-                    throw Exception("unexpected tag '", member.tag, "' at ", member.path, ":", member.line);
+                    throw Exception(member, " unexpected tag '", member.name, "' in struct");
             };
         };
 
@@ -978,7 +1212,6 @@ namespace scc {
         : Type(typeid(Enum).hash_code())
     {
         fromAst(asw);
-        extractGenerators();
     }
 
     void Enum::fromAst(const AstWrapper& asw)
@@ -986,8 +1219,8 @@ namespace scc {
         const auto& ast = asw();
         int off{1};
 
-        if (ast.nodes[off]->original_tag == "attribs"_) {
-            Attribute::buildAttributes(Attribs, ast.nodes[off++]);
+        if (ast.nodes[off]->original_tag == "genanno"_) {
+            parseGenAnno(*ast.nodes[off++]);
         }
 
         Name = Ident{ast.nodes[off++]};
@@ -1017,7 +1250,7 @@ namespace scc {
                     Members.push_back(std::make_shared<EnumMember>(member));
                     break;
                 default:
-                    throw Exception("unexpected tag '", member.tag, "' at ", member.path, ":", member.line);
+                    throw Exception(member, "unexpected tag '", member.tag, "' in enum");
             };
         };
 
@@ -1043,8 +1276,8 @@ namespace scc {
         }
 
         int off{0};
-        if (ast.nodes[off]->original_tag == "attribs"_) {
-            Attribute::buildAttributes(Attribs, ast.nodes[off++]);
+        if (ast.nodes[off]->original_tag == "annotations"_) {
+            Annotations = AnnotationList{ast.nodes[off++]};
         }
 
         // get the name of the member
@@ -1328,6 +1561,7 @@ namespace scc {
     void Program::fromAst(const AstWrapper& asw)
     {
         const auto& ast = asw();
+        Node::_sPath = ast.path;
 
         auto buildSection = [this](const peg::Ast& content) {
             switch (content.tag) {

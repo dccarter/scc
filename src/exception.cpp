@@ -32,6 +32,11 @@ namespace scc {
         os << "syntax error - " << ast.path << ":" << ast.line << " ";
     }
 
+    void Exception::buildMessage(std::ostream& os, const Source& src)
+    {
+        os << "syntax error - " << src << " ";
+    }
+
     const char* Exception::what() const noexcept
     {
         return mMessage.c_str();

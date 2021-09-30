@@ -2,7 +2,7 @@
 #include <string>
 
 #pragma load meta
-#pragma load demo "demo"
+#pragma load demo
 
 #pragma var ints   {num1: 1, num2: 077, num3: 0b10101, num4: 0xafE5}
 #pragma var chars  {char1: 'c', char2: '\n', char3: '\''}
@@ -15,21 +15,21 @@
 
 namespace demo::scc {
 
-    struct [[gen::meta]] User {
-        [[demo::ignore]]
+    struct [[gen(meta)]] User {
+        [[$meta::ignore]]
         std::string Email;
-        [[demo::skip]]
+        [[$meta::skip]]
         int    Age{6};
     };
 
-    class [[gen::demo(debug)]] Demo {
+    class [[gen(demo/debug)]] Demo {
     public:
         Demo(User user, User admin);
 
     private:
-        [[demo::debug(Email,Age)]]
+        [[$demo::debug("Email","Age")]]
         User  mUser;
-        [[demo::debug(Email)]]
+        [[$demo::debug("Email")]]
         User  mAdmin;
     };
 

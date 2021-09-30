@@ -145,14 +145,14 @@ namespace scc {
                     func(base);
                 }
             }
-            else if constexpr (std::is_same_v<TT, Attribute>) {
-                for (const auto& atrr: klass.Attribs) {
-                    func(atrr);
+            else if constexpr (std::is_same_v<TT, Generator>) {
+                for (const auto& gen: klass.Generators()) {
+                    func(gen);
                 }
             }
-            else if constexpr (std::is_same_v<TT, GeneratorAttribute>) {
-                for (const auto& atrr: klass.Generators) {
-                    func(atrr);
+            else if constexpr (std::is_same_v<TT, Annotation>) {
+                for (const auto& ann: klass.Annotations()) {
+                    func(ann);
                 }
             }
             else if constexpr (std::is_same_v<TT, Ident>) {
@@ -180,14 +180,14 @@ namespace scc {
             if (func == nullptr) return;
             const auto& klass = node.as<Struct>();
 
-            if constexpr (std::is_same_v<TT, Attribute>) {
-                for (const auto& atrr: klass.Attribs) {
-                    func(atrr);
+            if constexpr (std::is_same_v<TT, Generator>) {
+                for (const auto& gen: klass.Generators()) {
+                    func(gen);
                 }
             }
-            else if constexpr (std::is_same_v<TT, GeneratorAttribute>) {
-                for (const auto& atrr: klass.Generators) {
-                    func(atrr);
+            else if constexpr (std::is_same_v<TT, Annotation>) {
+                for (const auto& ann: klass.Annotations()) {
+                    func(ann);
                 }
             }
             else if constexpr (std::is_same_v<TT, Ident>) {
@@ -215,14 +215,14 @@ namespace scc {
             if (func == nullptr) return;
             const auto& klass = node.as<Enum>();
 
-            if constexpr (std::is_same_v<TT, Attribute>) {
-                for (const auto& atrr: klass.Attribs) {
-                    func(atrr);
+            if constexpr (std::is_same_v<TT, Annotation>) {
+                for (const auto& ann: klass.Annotations()) {
+                    func(ann);
                 }
             }
-            else if constexpr (std::is_same_v<TT, GeneratorAttribute>) {
-                for (const auto& atrr: klass.Generators) {
-                    func(atrr);
+            else if constexpr (std::is_same_v<TT, Generator>) {
+                for (const auto& gen: klass.Generators()) {
+                    func(gen);
                 }
             }
             else if constexpr (std::is_same_v<TT, Ident>) {

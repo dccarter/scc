@@ -11,36 +11,45 @@
 
 namespace {
 
-static const std::string BUILTIN_GRAMMAR = R"(
+    static const std::string BUILTIN_GRAMMAR = R"(
 program         <- _ before? namespace? after?
 namespace       <- namespacekey _ scoped _ '{' _ nscontent? _ '}' _
 namespacekey    <- 'namespace'
 nscontent       <- (variable / class / struct / native / comment / invoke / enum)+
-enum            <- enumkey _ attribs? _ ident (_ ':' _ ident)? _ '{' _ enumcontent? _ '}' sp ';' _
+enum            <- enumkey _ genanno? _ ident (_ ':' _ ident)? _ '{' _ enumcontent? _ '}' sp ';' _
+nestedenum      <- enumkey _ annotations? _ ident (_ ':' _ ident)? _ '{' _ enumcontent? _ '}' sp ';' _
 enumcontent     <- (comment / (enummember sp ',' _))* enummember comment?
-enummember      <- attribs? _ ident (_ '=' _ int)?
+enummember      <- annotations? _ ident (_ '=' _ int)?
 enumkey         <- 'enum'
-class           <- classkey _ attribs? _ ident (_ ':' _ bases)? _ '{' _ members? _ '}' sp ';' _
+class           <- classkey _ genanno? _ ident (_ ':' _ bases)? _ '{' _ members? _ '}' sp ';' _
 classkey        <- 'class'
-struct          <- structkey _ attribs? _ ident _ '{' _ fields? _ '}' sp ';' _
+struct          <- structkey _ genanno? _ ident _ '{' _ fields? _ '}' sp ';' _
+nestedstruct    <- structkey _ annotations? _ ident _ '{' _ fields? _ '}' sp ';' _
 structkey       <- 'struct' / 'union'
-members         <- (modifier / constructor / method / field / comment / native)+
-fields          <- (field / comment / native)+
+members         <- (modifier / constructor / method / field / nestedstruct / nestedenum / comment / native)+
+fields          <- (field / comment / native / nestedstruct / nestedenum)+
 bases           <- base (_ ',' _ base)*
 base            <- encapsul? sp generic
 modifier        <- encapsul sp ':' _
 encapsul        <- 'public' / 'protected' / 'private'
-method          <- attribs? _ (const sp)? generic typemode? _ ident _ '(' (_ params)? _ ')' (sp const)? sp ';' _
-constructor     <- attribs? _ ident _ '(' (_ params)? _ ')' sp ';' _
+method          <- annotations? _ (const sp)? generic typemode? _ ident _ '(' (_ params)? _ ')' (sp const)? sp ';' _
+constructor     <- annotations? _ ident _ '(' (_ params)? _ ')' sp ';' _
 params          <- param (_ ',' _ param)*
-param           <- (const sp)? generic typemode? _ ident
-field           <- attribs? _ const? sp generic typemode? sp ident (sp fieldvalue)? sp ';' _
+param           <- (annotations _)? (const sp)? generic typemode? _ ident
+field           <- annotations? _ const? sp generic typemode? sp ident (sp fieldvalue)? sp ';' _
 fieldvalue      <- '{' literal '}'
 generic         <- scoped '<' sp generic? (sp ',' sp generic)* '>' / scoped
-attribs         <- attrib (_ attrib)*
-attrib          <- '[[' attribname ('(' sp attribparams? sp ')')? ']]'
-attribname      <- ident ('::' ident)?
-attribparams    <- ident (sp ',' sp ident)*
+genanno         <- ((annotation / generator) _)+
+annotations     <- annotation (_ annotation)*
+annotation      <- '[[' _ annotname ( '(' _ annotparams _ ')' )? _ ']]' (sp linecomment)?
+annotname       <- annottag ident ('::' ident)*
+annottag        <- '$'
+annotparams     <- (annotposparams (_ ',' _ kvps)?) / kvps
+annotposparams  <- literal (sp ',' _ literal)*
+generator       <- '[[' gentag '(' _ gennames _ ')' _ ']]' (sp linecomment)?
+gennames        <- genname (',' _ genname)*
+genname         <- ident ('/' ident)?
+gentag          <- 'gen'
 scoped          <- ident ('::' ident)*
 before          <- (variable / include / comment / symbol / load / native / invoke) +
 after           <- (variable / native / comment / invoke)+
@@ -51,7 +60,7 @@ symbolkey       <- 'symbol'
 invoke          <- '#pragma' sp 'invoke' cpp? sp invokecmd sp '(' sp (ident / kvps)? sp ')' _
 invokecmd       <- ident '::' ident '.' ident
 variable        <- '#pragma' sp 'var' sp ident sp kvps _
-kvps            <- '{' sp kvp (sp ',' sp kvp)* sp '}'
+kvps            <- '{' _ kvp (sp ',' _ kvp)* _ '}'
 kvp             <- ident sp ':' sp literal
 include         <- includekey sp (str / include0) _
 include0        <- < [<] <(![<>] .)* > [>] >
@@ -77,7 +86,7 @@ comment         <- linecomment / blockcomment
 blockcomment    <- startcomment commentblock endcomment
 linecomment     <- '//' lcommentdetails _
 lcommentdetails <- (!nl .)*
-startcomment    <- '/*' (!nl .)*
+startcomment    <- '/*'
 commentblock    <- (!endcomment .)*
 endcomment      <- '*/' _
 native          <- startnative nativeblock endnative

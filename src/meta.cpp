@@ -44,16 +44,6 @@ namespace scc {
                 fmt << ",";
             }
             Line(fmt) << "prop(" << field.Name.Content;
-            if (!field.Attribs.empty()) {
-                fmt << "(";
-                for (const auto& attr: field.Attribs) {
-                    if (&attr != &field.Attribs.front()) {
-                        fmt << ", ";
-                    }
-                    attr.scopedString(fmt, "var");
-                }
-                fmt << ")";
-            }
             fmt << ", ";
             field.Type.toString(fmt);
             fmt << "())";
