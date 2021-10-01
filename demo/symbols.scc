@@ -34,10 +34,11 @@ namespace demo {
     };
 
     struct [[gen(meta/meta)]] User {
-        [[$meta(0, {ignore: true})]]
+        [[$meta(index=0, skip=false)]]
         std::string Email;
 
-        [[$meta(1, {skip: true})]]
+        [[$meta::index(0)]]
+        [[$meta::skip(0)]]
         int    Age{6};
     };
 }

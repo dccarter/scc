@@ -90,6 +90,12 @@ namespace scc {
         }, Value);
     }
 
+    void Literal::setSource(Source src)
+    {
+        _source = src;
+        _source.Path = _sPath;
+    }
+
     void Literal::fromAst(const AstWrapper& asw)
     {
         const auto& ast = asw();
@@ -622,106 +628,150 @@ _NODE_CTOR(GeneratorList);
         fmt << ")]]";
     }
 
+    _NODE_CTOR(AnnotationField);
+
+    void AnnotationField::fromAst(const AstWrapper& asw)
+    {
+        Name = Ident{asw};
+    }
+
+    const Literal& AnnotationField::operator[](int param) const
+    {
+        if (param < Params.size()) {
+            return Params[param];
+        }
+        static Literal INVALID_LITERAL;
+        return INVALID_LITERAL;
+    }
+
+    void AnnotationField::toString(Formatter& fmt) const
+    {
+        fmt << Name << "(" << Params[0];
+        for (int i = 1; i < Params.size(); i++) {
+            fmt << ", " << Params[i];
+        }
+        fmt << ")";
+    }
+
+    const AnnotationField& Annotation::operator[](const std::string& name) const
+    {
+        for (auto& field: Fields) {
+            if (field == name) {
+                return field;
+            }
+        }
+        static AnnotationField INVALID_FIELD;
+        return INVALID_FIELD;
+    }
+
     _NODE_CTOR(Annotation);
 
     void Annotation::fromAst(const AstWrapper& asw)
     {
-        const auto& ast = asw.ast;
-        auto buildAnnotationName = [&](const peg::Ast& node) {
-            for (int i = 1; i < node.nodes.size(); i++) {
-                Name.push_back(Ident{node.nodes[i]});
-            }
-        };
-
-        auto buildParams = [&](const peg::Ast& node) {
-            if (node.tag == "kvps"_ or node.tag == "kvp"_) {
-                NamedParams = KeyValuePairs{node};
-            }
-            else if (node.tag == "annotposparams"_) {
-                for (auto& n: node.nodes) {
-                    PositionalParam.push_back(Literal{n});
-                }
-            }
-            else {
-                PositionalParam.push_back(Literal{node});
-            }
-        };
-
-        if (ast.tag == "annotname"_) {
-            buildAnnotationName(ast);
-        }
-        else {
-            buildAnnotationName(*ast.nodes[0]);
-            const auto& params = *ast.nodes[1];
-            if (params.tag == "annotparams"_) {
-                for (auto& p: params.nodes) {
-                    buildParams(*p);
-                }
-            }
-            else if (params.original_tag != "linecomment"_) {
-                // ignoring all comments attached to attributes
-                buildParams(params);
-            }
-        }
-        _valid = true;
-    }
-
-    bool Annotation::operator==(const Vec<std::string>& name) const
-    {
-        if (Name.size() != name.size()) {
-            return false;
-        }
-        for (int i = 0; i < name.size(); i++) {
-            if (Name[i] != name[i]) {
-                return false;
-            }
-        }
-        return true;
+        Name = Ident{asw};
     }
 
     void Annotation::toString(Formatter& fmt) const
     {
-        fmt << "[[$";
-        for (int i = 0 ; i < Name.size(); i++) {
-            if (i) fmt << "::";
-            fmt << Name[i];
+        for (int i = 0; i < Fields.size(); i++) {
+            if(i) Line(fmt);
+            fmt << "[[$" << Name << "::" << Fields[i] << "]]";
         }
-        fmt << "(";
-        if (!PositionalParam.empty()) {
-            for (int i = 0; i < PositionalParam.size(); i++) {
-                if(i) fmt << ", ";
-                fmt << PositionalParam[i];
-            }
-        }
-        if (NamedParams) {
-            if (!PositionalParam.empty()) fmt << ", ";
-            fmt << "{";
-            bool first{true};
-            for (auto& [key, value]: NamedParams()) {
-                when(first) fmt << ", ";
-                fmt << key <<  ":" << value;
-            }
-            fmt << "}";
-        }
-        fmt << ")]]";
     }
 
     _NODE_CTOR(AnnotationList);
 
-    void AnnotationList::fromAst(const AstWrapper& asw)
+    Annotation& AnnotationList::findOrAdd(const AstWrapper& ast)
+    {
+        for (auto& ann: _annotations) {
+            if (ann == ast().token) {
+                return ann;
+            }
+        }
+        _annotations.push_back(Annotation{ast});
+        return _annotations.back();
+    }
+
+    void AnnotationList::parseCompoundAnnotation(const AstWrapper& asw)
     {
         const auto& ast = asw.ast;
-        if (ast.tag == "annotations"_) {
-            for (auto& node: ast.nodes) {
-                _annotations.push_back(Annotation{*node});
+        auto& ann = findOrAdd(ast.nodes[0]->nodes[1]);
+        auto buildParam = [&](const peg::Ast& node) {
+            AnnotationField field{node.nodes[0]};
+            if (ann[field.Name.Content]) {
+                throw Exception(field.Name.src(), "field '",
+                                field.Name.Content, "' already defined in annotation '",
+                                ann.Name.Content, "'");
+            }
+            field.Params.push_back(Literal{node.nodes[1]});
+            ann.Fields.push_back(std::move(field));
+        };
+
+        if (ast.nodes[1]->tag == "annotgenparams"_) {
+            for (auto& node: ast.nodes[1]->nodes) {
+                buildParam(*node);
             }
         }
         else {
-            _annotations.push_back(Annotation{ast});
+            buildParam(*ast.nodes[1]);
         }
     }
 
-    const Annotation& AnnotationList::operator[](const Vec<std::string>& name) const
+    void AnnotationList::parseIndexedAnnotation(const AstWrapper& asw)
+    {
+        const auto& ast = asw.ast;
+        auto buildParam = [&](const peg::Ast& node) -> AnnotationField& {
+            auto& ann = findOrAdd(node.nodes[1]);
+            AnnotationField field{node.nodes[2]};
+            if (ann[field.Name.Content]) {
+                throw Exception(field.Name.src(), "field '",
+                                field.Name.Content, "' already defined in annotation '",
+                                ann.Name.Content, "'");
+            }
+            ann.Fields.push_back(std::move(field));
+            return ann.Fields.back();
+        };
+
+        if (ast.tag == "annotidx"_) {
+            auto& field = buildParam(*ast.nodes[0]);
+            const auto& params = *ast.nodes[1];
+            if (params.tag == "annotidxparams"_) {
+                for (auto& param: params.nodes) {
+                    field.Params.push_back(Literal{param});
+                }
+            }
+            else {
+                field.Params.push_back(Literal{params});
+            }
+        }
+        else {
+            auto& field = buildParam(ast);
+            Literal setTrue{true};
+            setTrue.setSource(Source{*ast.nodes[0]});
+            field.Params.push_back(std::move(setTrue));
+        }
+    }
+
+    void AnnotationList::fromAst(const AstWrapper& asw)
+    {
+        const auto& ast = asw.ast;
+        if (ast.tag == "annotidx"_ || ast.tag == "annotnameidx"_) {
+            parseIndexedAnnotation(ast);
+        }
+        else if (ast.tag == "annotgen"_) {
+            parseCompoundAnnotation(ast);
+        }
+        else if (ast.tag == "annotation"_) {
+            fromAst(ast.nodes[0]);
+        }
+        else {
+            for (auto& node: ast.nodes) {
+                fromAst(node);
+            }
+        }
+    }
+
+    const Annotation& AnnotationList::operator[](const std::string& name) const
     {
         for (auto& ann : _annotations) {
             if (ann == name) {
@@ -736,7 +786,6 @@ _NODE_CTOR(GeneratorList);
     {
         bool first{true};
         for (auto& ann: _annotations) {
-            when(first) Line(fmt);
             fmt << ann;
         }
     }
@@ -745,7 +794,7 @@ _NODE_CTOR(GeneratorList);
 
     void Modifier::toString(Formatter &fmt) const
     {
-        ++(Line(--fmt) << Name << ":");
+        ++(--fmt << Name << ":");
     }
 
     void Modifier::fromAst(const AstWrapper& asw)
@@ -759,10 +808,10 @@ _NODE_CTOR(GeneratorList);
     void Field::toString(Formatter &fmt) const
     {
         if (Annotations) {
-            Line(fmt);
             fmt << Annotations;
+            Line(fmt);
         }
-        Line(fmt);
+
         if (Const) {
             fmt << "const ";
         }
@@ -895,9 +944,7 @@ _NODE_CTOR(GeneratorList);
 
     void Method::toString(Formatter &fmt) const
     {
-        Line(fmt);
         toString0(fmt);
-        fmt << ";";
     }
 
     void Method::fromAst(const AstWrapper& asw)
@@ -944,7 +991,7 @@ _NODE_CTOR(GeneratorList);
             }
             fmt << param;
         }
-        fmt << ");";
+        fmt << ")";
     }
 
     void Constructor::fromAst(const AstWrapper& asw)
@@ -1013,7 +1060,16 @@ _NODE_CTOR(GeneratorList);
 
     void Type::toString(Formatter &fmt) const
     {
-        Line(fmt) << (is<Class>()? "class " : "struct ");
+        if (is<Class>()) {
+            fmt << "class ";
+        }
+        else if (is<Struct>()) {
+            fmt << (as<Struct>().IsUnion? "union ": "struct ");
+        }
+        else {
+            fmt << "enum ";
+        }
+
         if (Generators) {
             fmt << Generators << " ";
         }
@@ -1039,10 +1095,17 @@ _NODE_CTOR(GeneratorList);
         fmt << '{';
         ++fmt;
         for(const auto& node: Members) {
+            Line(fmt);
             node->toString(fmt);
+            if (is<Enum>() and node->is<EnumMember>()) {
+                fmt << ",";
+            }
+            else if (node->is<Constructor>() || node->is<Field>() || node->is<Method>()) {
+                fmt << ";";
+            }
         }
+
         Line(--fmt) << "};";
-        Line(fmt);
     }
 
     Type::Type()
@@ -1060,7 +1123,12 @@ _NODE_CTOR(GeneratorList);
                 Generators._generators.push_back(Generator{node.nodes[1]});
             }
             else {
-                Annotations._annotations.push_back(Annotation{node});
+                if (!Annotations) {
+                    Annotations = AnnotationList{node};
+                }
+                else {
+                    Annotations.fromAst(node);
+                }
             }
         };
 
@@ -1285,6 +1353,19 @@ _NODE_CTOR(GeneratorList);
         if (off < ast.nodes.size()) {
             // enum assigned value
             Value = ast.nodes[off]->token;
+        }
+    }
+
+    void EnumMember::toString(Formatter& fmt) const
+    {
+        if (Annotations) {
+            fmt << Annotations;
+            Line(fmt);
+        }
+
+        fmt << Name;
+        if (!Value.empty()) {
+            fmt << " = " << Value;
         }
     }
 

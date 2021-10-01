@@ -15,7 +15,7 @@
 
 namespace demo::scc {
 
-    struct [[gen(meta)]] User {
+    struct [[gen(meta)]] [[$meta(id=10, name="User")]] User {
         [[$meta::ignore]]
         std::string Email;
         [[$meta::skip]]
@@ -33,11 +33,42 @@ namespace demo::scc {
         User  mAdmin;
     };
 
+    class [[gen(demo/debug)]] Calculator {
+    private:
+        [[$demo(tag='H')]]
+        std::string host{"localhost"};
+        [[$demo(tag='P')]]
+        int port{8080};
+
+        void add(
+                [[$demo(tag='a')]] int first,
+                [[$demo(tag='b')]] int b
+                );
+
+        struct Shape {
+            enum Kind {
+                SQUARE,
+                CIRCLE
+            };
+            Kind kind;
+            union Shapes {
+                struct Square {
+                    int w;
+                };
+                struct Circle {
+                    int r;
+                };
+                Circle circle;
+                Square square;
+            };
+        };
+        Shape shape;
+    };
 
 #pragma native[cpp]
     Demo::Demo(User user, User admin)
         : mUser(user), mAdmin(admin)
     {}
-
 #pragma endnative
+
 }

@@ -41,12 +41,16 @@ fieldvalue      <- '{' literal '}'
 generic         <- scoped '<' sp generic? (sp ',' sp generic)* '>' / scoped
 genanno         <- ((annotation / generator) _)+
 annotations     <- annotation (_ annotation)*
-annotation      <- '[[' _ annotname ( '(' _ annotparams _ ')' )? _ ']]' (sp linecomment)?
-annotname       <- annottag ident ('::' ident)*
+annotation      <- (annotidx / annotgen) (_ comments)?
+annotgen        <- '[[' _ annotnamegen ( '(' _ annotgenparams _ ')' ) _ ']]'
+annotidx        <- '[[' _ annotnameidx ( '(' _ annotidxparams _ ')' )? _ ']]'
+annotnameidx    <- annottag ident '::' ident
+annotnamegen    <- annottag ident
 annottag        <- '$'
-annotparams     <- (annotposparams (_ ',' _ kvps)?) / kvps
-annotposparams  <- literal (sp ',' _ literal)*
-generator       <- '[[' gentag '(' _ gennames _ ')' _ ']]' (sp linecomment)?
+annotidxparams  <- literal (sp ',' (_ comments)? _ literal)* (_ comments)?
+annotgenparams  <- annotgenparam (sp ',' (_ comments)? _ annotgenparam)* (_ comments)?
+annotgenparam   <- ident sp '=' sp literal
+generator       <- '[[' gentag '(' _ gennames _ ')' _ ']]' (_ comments)?
 gennames        <- genname (',' _ genname)*
 genname         <- ident ('/' ident)?
 gentag          <- 'gen'
@@ -82,6 +86,7 @@ string          <- str / rawstr
 str             <- < ["] <(!["] .)* > ["] >
 rawstr          <- 'R"(' < (!rawstrend .)* > rawstrend
 rawstrend       <- ')\"'
+comments        <- (comment _)+
 comment         <- linecomment / blockcomment
 blockcomment    <- startcomment commentblock endcomment
 linecomment     <- '//' lcommentdetails _

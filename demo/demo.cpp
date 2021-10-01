@@ -33,8 +33,9 @@ namespace scc {
             Base::toString(fmt, ct.BaseClasses);
         }
         fmt << " {";
-        Line(++fmt);
+        ++fmt;
         Visitor<Class>(ct).visit<Node>([&](const Node& node) {
+            Line(fmt);
             node.toString(fmt);
             if (node.is<Field>() or node.is<Method>() or node.is<Constructor>()) {
                 fmt << ';';
@@ -65,21 +66,17 @@ namespace scc {
 
     void DemoCppGenerator::generate(Formatter& fmt, const std::string& klass, const Field& field)
     {
-        auto& dbg = field.Annotations[ {"demo", "debug"}];
-        if (dbg) {
-            if (dbg.NamedParams) {
-                throw Exception("annotation demo/debug does not support named parameters");
-            }
-
+        auto& dbg = field.Annotations[ {"demo"}][{"debug"}];
+        if (dbg and !dbg.Params.empty()) {
             Line(fmt) << R"(dbp << ")" << field.Name.Content << R"( : {";)";
             //  os << "mUser = {";
             //  Email: " << mUser.Email << ", Age: " << mUser.Age << "}";
-            for (const auto& param: dbg.PositionalParam) {
+            for (const auto& param: dbg.Params) {
                 if (!param.has<std::string>()) {
                     throw Exception("annotation demo/debug only accepts string field names");
                 }
 
-                if (&param != &dbg.PositionalParam.front()) {
+                if (&param != &dbg.Params.front()) {
                     Line(fmt) << R"(dbp << ", ";)";
                 }
 

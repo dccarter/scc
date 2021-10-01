@@ -153,6 +153,10 @@ namespace scc {
         Literal(const AstWrapper& asw);
         Literal();
 
+        Literal(bool v)
+            : Value{v}, valid{true}
+        {}
+
         void toString(Formatter &fmt) const override;
 
         Value_t Value{nullptr};
@@ -174,6 +178,8 @@ namespace scc {
         }
 
         SCC_DISABLE_COPY(Literal);
+
+        void setSource(Source src);
 
     protected:
         void fromAst(const AstWrapper &asw) override;
@@ -335,26 +341,41 @@ namespace scc {
 
     using KVPParams = KeyValuePairs;
 
+    class AnnotationField : public Node {
+    public:
+        AnnotationField(const AstWrapper& ast);
+        AnnotationField();
+        SCC_DISABLE_COPY(AnnotationField);
+
+        Ident  Name;
+        Vec<Literal> Params;
+
+        const Literal& operator[](int param) const;
+        operator bool() const { return !Name.Content.empty(); }
+        bool operator==(const std::string& name) const { return Name == name; }
+        bool operator!=(const std::string& name) const { return !(*this == name); }
+        void toString(Formatter &fmt) const override;
+
+    protected:
+        void fromAst(const AstWrapper &ast) override;
+    };
+
     class Annotation : public Node {
     public:
         Annotation(const AstWrapper& ast);
         Annotation();
         SCC_DISABLE_COPY(Annotation);
 
-        Vec<Ident>   Name;
-        Vec<Literal> PositionalParam{};
-        KVPParams    NamedParams{};
-        const Literal& get(int index, const std::string& name) const;
-        operator bool() const { return _valid; }
-        bool operator==(const Vec<std::string>& name) const;
-        bool operator!=(const Vec<std::string>& name) const { return !(*this == name); }
+        Ident Name;
+        Vec<AnnotationField> Fields{};
+        const AnnotationField& operator[](const std::string& name) const;
+        operator bool() const { return !Name.Content.empty(); }
+        bool operator==(const std::string& name) const { return Name == name; }
+        bool operator!=(const std::string& name) const { return !(*this == name); }
         void toString(Formatter &fmt) const override;
 
     protected:
         void fromAst(const AstWrapper &ast) override;
-
-    private:
-        bool _valid{true};
     };
 
     class AnnotationList : public Node {
@@ -366,11 +387,13 @@ namespace scc {
         operator bool() const { return !_annotations.empty(); }
 
         void toString(Formatter &fmt) const override;
-        const Annotation& operator[](const Vec<std::string>& name) const;
+        const Annotation& operator[](const std::string& name) const;
         const Vec<Annotation>& operator()() const { return _annotations; }
     protected:
         void fromAst(const AstWrapper &ast) override;
-
+        void parseCompoundAnnotation(const AstWrapper& ast);
+        void parseIndexedAnnotation(const AstWrapper& ast);
+        Annotation& findOrAdd(const AstWrapper& ast);
     private:
         friend class Type;
         Vec<Annotation> _annotations{};
@@ -574,6 +597,8 @@ namespace scc {
         std::string Value{};
 
         SCC_DISABLE_COPY(EnumMember);
+
+        void toString(Formatter &fmt) const override;
 
     protected:
         void fromAst(const AstWrapper& ) override;
